@@ -227,9 +227,15 @@ def display():
      
     
     for g in ghosts:
-        g.draw()
-        position=[pc.x, pc.y]
-        g.update2(position)
+        #print(g)
+        if g == ghosts[3]:
+            g.draw()
+            position=[pc.x, pc.y]
+            g.update1(position)
+        else:
+            g.draw()
+            position=[pc.x, pc.y]
+            g.update2(position)
     
 done = False
 Init()

@@ -91,13 +91,33 @@ class Ghost:
         if self.y - 1 >= 0          and self.mapa[self.y - 1][self.x] == 1: opciones.append(4)
         if opciones:
             self.dir = random.choice(opciones)
+            
+    def interseccion_solo_random(self, pacmanXY):
+        px, py = pacmanXY
  
+        # Si ninguna preferida funciona, dirección aleatoria
+        opciones = []
+        if self.x + 1 <= self.MAX_X and self.mapa[self.y][self.x + 1] == 1: opciones.append(1)
+        if self.x - 1 >= 0          and self.mapa[self.y][self.x - 1] == 1: opciones.append(3)
+        if self.y + 1 <= self.MAX_Y and self.mapa[self.y + 1][self.x] == 1: opciones.append(2)
+        if self.y - 1 >= 0          and self.mapa[self.y - 1][self.x] == 1: opciones.append(4)
+        if opciones:
+            self.dir = random.choice(opciones)
+            
+    def interseccion_inteligente(self, pacmanXY):
+        px, py = pacmanXY
+        direcciones = [1,2,3,4]
     
     def update2(self,pacmanXY):     
         if self.XPxToMC[self.x] != -1 and self.YPxToMC[self.y] != -1:
+            self.interseccion_solo_random(pacmanXY)
+        self.sigue_adelante()
+    
+    def update1(self,pacmanXY):     
+        if self.XPxToMC[self.x] != -1 and self.YPxToMC[self.y] != -1:
             self.interseccion_random(pacmanXY)
         self.sigue_adelante()
- 
+    
     def draw(self):
         
         DimBoard = 20
