@@ -6,11 +6,13 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.GLUT import *
 
+
 import math
 import os
 import numpy as np
 import pandas as pd
 import random
+import heapq
 
 class Ghost:
     def __init__(self,mapa, mc, x_mc, y_mc, xini, yini, dir, tipo):
@@ -117,6 +119,27 @@ class Ghost:
         if self.XPxToMC[self.x] != -1 and self.YPxToMC[self.y] != -1:
             self.interseccion_random(pacmanXY)
         self.sigue_adelante()
+
+#implementar algoritmo a *
+    def interseccion_astar(self, ghost, pacmanXY):
+        px, py = pacmanXY
+        open = []
+        heapq.heappush(open, node)
+        #si estan en el mismo eje en direcciones opuestas esta bien, si van en la misma direccion mal
+        #eso lo checa la funcion de evaluacion
+        
+    def children(self, curr):
+        child = []
+        #cuakes son lo shijos de ghost 1 y de ghost 2
+        #los nodod hijos son los que sean hijos de los 2, 
+        #posisicon actual considera la pisicion de los 2 ghost
+        
+    def update_a_star(self, ghost, pacmanXY):
+        
+        if self.XPxToMC[self.x] != -1 and self.YPxToMC[self.y] != -1:
+            self.interseccion_astar(pacmanXY)
+        self.sigue_adelante()
+        
     
     def draw(self):
         
