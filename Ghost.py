@@ -56,6 +56,7 @@ class Ghost:
             self.y -= 1
         else:
             # Hay pared, elegir dirección aleatoria válida
+            """
             opciones = []
             if self.x + 1 <= self.MAX_X and self.mapa[self.y][self.x + 1] == 1: opciones.append(1)
             if self.x - 1 >= 0          and self.mapa[self.y][self.x - 1] == 1: opciones.append(3)
@@ -63,7 +64,9 @@ class Ghost:
             if self.y - 1 >= 0          and self.mapa[self.y - 1][self.x] == 1: opciones.append(4)
             if opciones:
                 self.dir = random.choice(opciones)
-                self.sigue_adelante()
+            """
+            self.interseccion_solo_random()
+            self.sigue_adelante()
  
 
     def interseccion_inteligente(self, pacmanXY):
@@ -86,7 +89,7 @@ class Ghost:
                 return
  
         # Si ninguna preferida funciona, dirección aleatoria
-        self.interseccion_solo_random(pacmanXY)
+        self.interseccion_solo_random()
         """
         opciones = []
         if self.x + 1 <= self.MAX_X and self.mapa[self.y][self.x + 1] == 1: opciones.append(1)
@@ -96,8 +99,7 @@ class Ghost:
         if opciones:
             self.dir = random.choice(opciones)"""
             
-    def interseccion_solo_random(self, pacmanXY):
-        px, py = pacmanXY
+    def interseccion_solo_random(self):
         
         opuesta = {1:3, 3:1, 2:4, 4:2}.get(self.dir, 0)
         
@@ -121,7 +123,7 @@ class Ghost:
     
     def update2(self,pacmanXY):     
         if self.XPxToMC[self.x] != -1 and self.YPxToMC[self.y] != -1:
-            self.interseccion_solo_random(pacmanXY)
+            self.interseccion_solo_random()
         self.sigue_adelante()
     
     def update1(self,pacmanXY):     
