@@ -86,20 +86,22 @@ class Ghost:
                 return
  
         # Si ninguna preferida funciona, dirección aleatoria
+        self.interseccion_solo_random(pacmanXY)
+        """
         opciones = []
         if self.x + 1 <= self.MAX_X and self.mapa[self.y][self.x + 1] == 1: opciones.append(1)
         if self.x - 1 >= 0          and self.mapa[self.y][self.x - 1] == 1: opciones.append(3)
         if self.y + 1 <= self.MAX_Y and self.mapa[self.y + 1][self.x] == 1: opciones.append(2)
         if self.y - 1 >= 0          and self.mapa[self.y - 1][self.x] == 1: opciones.append(4)
         if opciones:
-            self.dir = random.choice(opciones)
+            self.dir = random.choice(opciones)"""
             
     def interseccion_solo_random(self, pacmanXY):
         px, py = pacmanXY
         
         opuesta = {1:3, 3:1, 2:4, 4:2}.get(self.dir, 0)
         
-        # Si ninguna preferida funciona, dirección aleatoria
+        #dirección aleatoria pero que no se regrese
         opciones = []
         posibles = [
             (1, self.x + 1, self.y), (3, self.x - 1, self.y),
