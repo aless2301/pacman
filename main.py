@@ -16,6 +16,7 @@ import sys
 sys.path.append('..')
 from Pacman import Pacman
 from Ghost import Ghost
+from Node import Node
 
 screen_width = 800
 screen_height = 800
@@ -95,12 +96,6 @@ pc = Pacman(matrix, MC, XPxToMC, YPxToMC)
 #ghosts = []
 """
 ghosts = [
-    Ghost(matrix, MC, XPxToMC, YPxToMC, 10, 10, 1, 1),   # Fantasma 1 en esquina superior izq
-    Ghost(matrix, MC, XPxToMC, YPxToMC, 340, 10, 3, 2), # Fantasma 2 en esquina superior der
-    Ghost(matrix, MC, XPxToMC, YPxToMC, 10, 340, 1, 3), # Fantasma 3 en esquina inferior izq
-    Ghost(matrix, MC, XPxToMC, YPxToMC, 340, 340, 4, 4) # Fantasma 4 en esquina inferior der
-]"""
-ghosts = [
     # Esquina Superior Izquierda: xMC[0], yMC[0] -> (0, 0)
     Ghost(matrix, MC, XPxToMC, YPxToMC, xMC[0], yMC[0], 1, 1),
     
@@ -112,7 +107,21 @@ ghosts = [
     
     # Esquina Inferior Derecha: xMC[9], yMC[9] -> (358, 360)
     Ghost(matrix, MC, XPxToMC, YPxToMC, xMC[9], yMC[9], 4, 4)
+]"""
+ghosts = [
+    # Fantasma 1: Cooperativo A - Arriba de la caja
+    Ghost(matrix, MC, XPxToMC, YPxToMC, xMC[4], yMC[3], 1, 1),
+    
+    # Fantasma 2: Cooperativo B - Arriba de la caja
+    Ghost(matrix, MC, XPxToMC, YPxToMC, xMC[5], yMC[3], 3, 2),
+    
+    # Fantasma 3: Aleatorio - Abajo de la caja
+    Ghost(matrix, MC, XPxToMC, YPxToMC, xMC[4], yMC[5], 4, 3),
+    
+    # Fantasma 4: Inteligente - Abajo de la caja
+    Ghost(matrix, MC, XPxToMC, YPxToMC, xMC[5], yMC[5], 4, 4)
 ]
+
 pygame.init()
 
 def Axis():
@@ -197,6 +206,55 @@ def PlanoTexturizado():
     glEnd()              
     glDisable(GL_TEXTURE_2D)
 
+
+def a_star(g1, g2, pacmanXY):
+    # 1. initialize: open := [Start]; closed := []
+    inicio = Node((g1.x, g1.y), (g2.x, g2.y), (g1.dir, g2.dir))
+    open_list = [inicio]
+    closed_list = []
+    
+    # Solo recalculamos si están en intersección
+    if g1.XPxToMC[g1.x] == -1 or g1.YPxToMC[g1.y] == -1:
+        return g1.dir, g2.dir
+
+    # Ejecutamos A* (2 niveles de profundidad para eficiencia)
+    for _ in range(2):
+        if not open_list: break
+        
+        # remove leftmost from open (el de menor f)
+        open_list.sort(key=lambda n: n.f)
+        actual = open_list.pop(0)
+        closed_list.append(actual)
+        
+        # generate children
+        hijos1 = g1.children()
+        hijos2 = g2.children()
+        
+        for h1 in hijos1:
+            for h2 in hijos2:
+                nuevo_hijo = Node(h1['pos'], h2['pos'], (h1['dir'], h2['dir']), parent=actual)
+                
+                # Cálculo de Heurística (h)
+                dist1 = abs(nuevo_hijo.f1_x - pacmanXY[0]) + abs(nuevo_hijo.f1_y - pacmanXY[1])
+                dist2 = abs(nuevo_hijo.f2_x - pacmanXY[0]) + abs(nuevo_hijo.f2_y - pacmanXY[1])
+                
+                # Penalización cooperativa: evitar que estén en la misma zona
+                dist_entre_fantasmas = abs(nuevo_hijo.f1_x - nuevo_hijo.f2_x) + abs(nuevo_hijo.f1_y - nuevo_hijo.f2_y)
+                penalizacion = 600 if dist_entre_fantasmas < 80 else 0
+                
+                nuevo_hijo.g = actual.g + 1
+                nuevo_hijo.h = dist1 + dist2 + penalizacion
+                nuevo_hijo.f = nuevo_hijo.g + nuevo_hijo.h
+                
+                # add child to open
+                open_list.append(nuevo_hijo)
+    
+    # Retornar las mejores direcciones 
+    if open_list:
+        open_list.sort(key=lambda n: n.f)
+        return open_list[0].dirs
+    return g1.dir, g2.dir
+
 dir = 0
 olddir = 0
 
@@ -211,7 +269,6 @@ def display():
     
     keys = pygame.key.get_pressed()
     
-    
     if keys[pygame.K_RIGHT]:
         dir = 1  
     if keys[pygame.K_DOWN]:
@@ -225,17 +282,27 @@ def display():
     olddir = pc.update(olddir,dir)
     pc.draw()
      
+    pacman_pos = [pc.x, pc.y]
+    d1, d2 = a_star(ghosts[0], ghosts[1], pacman_pos)
     
-    for g in ghosts:
-        #print(g)
-        if g == ghosts[3]:
-            g.draw()
-            position=[pc.x, pc.y]
-            g.update1(position)
+    ghosts[0].dir = d1
+    ghosts[1].dir = d2
+    
+    for g in (ghosts):
+        g.draw()
+        
+        if g == ghosts[0] or g == ghosts[1]: #el azul y naranja son cooperativos
+            # Estos son los cooperativos, ya tienen su 'dir' asignada por el A*
+            # Solo necesitan seguir adelante
+            g.sigue_adelante()
+            
+        elif g == ghosts[3]:
+            # El fantasma 4, el rojo, sigue con su lógica inteligente individual
+            g.update1(pacman_pos) 
+          
         else:
-            g.draw()
-            position=[pc.x, pc.y]
-            g.update2(position)
+            # El resto sigue con lógica aleatoria 3rosa random
+            g.update2(pacman_pos)
     
 done = False
 Init()
