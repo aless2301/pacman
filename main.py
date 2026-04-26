@@ -17,6 +17,7 @@ sys.path.append('..')
 from Pacman import Pacman
 from Ghost import Ghost
 from Node import Node
+import math
 
 screen_width = 800
 screen_height = 800
@@ -35,10 +36,11 @@ textures = []
 BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 file_1 = os.path.join(BASE_PATH, 'mapa.bmp') #imagen vectorizada
 img_pacman = os.path.join(BASE_PATH, 'pacman.bmp')
-img_ghost1 = os.path.join(BASE_PATH, 'fantasma1.bmp')
-img_ghost2 = os.path.join(BASE_PATH, 'fantasma2.bmp')
-img_ghost3 = os.path.join(BASE_PATH, 'fantasma3.bmp')
-img_ghost4 = os.path.join(BASE_PATH, 'fantasma4.bmp')
+img_ghost1 = os.path.join(BASE_PATH, 'marianin.bmp')
+img_ghost2 = os.path.join(BASE_PATH, 'lupis.bmp')
+img_ghost3 = os.path.join(BASE_PATH, 'hope.bmp')
+img_ghost4 = os.path.join(BASE_PATH, 'ale.bmp')
+file_gameover = os.path.join(BASE_PATH, 'gameover.bmp')
 
 
 file_csv = os.path.join(BASE_PATH, 'mapa.csv')
@@ -178,12 +180,11 @@ def Init():
     Texturas(img_ghost3)
     #textures[5]: fantasma4
     Texturas(img_ghost4)
+    #fin
+    Texturas(file_gameover)
     #se pasan las texturas a los objetos
     pc.loadTextures(textures,1)
-    #ghosts[0].loadTextures(textures,2)
-    #ghosts[1].loadTextures(textures,3)
-    #ghosts[2].loadTextures(textures,4)
-    #ghosts[3].loadTextures(textures,5)
+
     for i in range(len(ghosts)):
         # La textura de los fantasmas empieza en el índice 2 de la lista 'textures'
         ghosts[i].loadTextures(textures, i + 2)
@@ -206,55 +207,91 @@ def PlanoTexturizado():
     glEnd()              
     glDisable(GL_TEXTURE_2D)
 
-
+#MI BELLO A STAR
 def a_star(g1, g2, pacmanXY):
-    # 1. initialize: open := [Start]; closed := []
-    inicio = Node((g1.x, g1.y), (g2.x, g2.y), (g1.dir, g2.dir))
-    open_list = [inicio]
-    closed_list = []
+   
+    ALPHA = 0.7  # Importancia de acercarse al Pacman
+    BETA = 0.3   # Importancia de separarse entre ellos
     
-    # Solo recalculamos si están en intersección
-    if g1.XPxToMC[g1.x] == -1 or g1.YPxToMC[g1.y] == -1:
-        return g1.dir, g2.dir
+    #nodo inicial
+    nodo_raiz = Node((g1.x, g1.y), (g2.x, g2.y), (g1.dir, g2.dir))
+    open_list = [nodo_raiz]
+    
 
-    # Ejecutamos A* (2 niveles de profundidad para eficiencia)
+    # profundidad 2 (Expandimos la raíz y sus hijos inmediatos)
     for _ in range(2):
         if not open_list: break
         
-        # remove leftmost from open (el de menor f)
-        open_list.sort(key=lambda n: n.f)
+        open_list.sort(key=lambda n: n.f) # El más prometedor primero
         actual = open_list.pop(0)
-        closed_list.append(actual)
         
-        # generate children
-        hijos1 = g1.children()
-        hijos2 = g2.children()
-        
-        for h1 in hijos1:
-            for h2 in hijos2:
-                nuevo_hijo = Node(h1['pos'], h2['pos'], (h1['dir'], h2['dir']), parent=actual)
+        # Generar combinaciones de movimientos para ambos fantasmas
+        for h1 in g1.children():
+            for h2 in g2.children():
+                nuevo = Node(h1['pos'], h2['pos'], (h1['dir'], h2['dir']), parent=actual)
                 
-                # Cálculo de Heurística (h)
-                dist1 = abs(nuevo_hijo.f1_x - pacmanXY[0]) + abs(nuevo_hijo.f1_y - pacmanXY[1])
-                dist2 = abs(nuevo_hijo.f2_x - pacmanXY[0]) + abs(nuevo_hijo.f2_y - pacmanXY[1])
+                # --- EVALUACIÓN EUCLIDIANA ---
+                # Distancia de los fantasmas al Pacman
+                dist_p1 = math.sqrt((nuevo.f1_x - pacmanXY[0])**2 + (nuevo.f1_y - pacmanXY[1])**2)
+                dist_p2 = math.sqrt((nuevo.f2_x - pacmanXY[0])**2 + (nuevo.f2_y - pacmanXY[1])**2)
+                atraccion_pacman = (dist_p1 + dist_p2) / 2 # Promedio de cercanía
                 
-                # Penalización cooperativa: evitar que estén en la misma zona
-                dist_entre_fantasmas = abs(nuevo_hijo.f1_x - nuevo_hijo.f2_x) + abs(nuevo_hijo.f1_y - nuevo_hijo.f2_y)
-                penalizacion = 600 if dist_entre_fantasmas < 80 else 0
+                # Distancia entre fantasmas (Queremos que sea GRANDE, por eso restamos)
+                dist_entre_fantasmas = math.sqrt((nuevo.f1_x - nuevo.f2_x)**2 + (nuevo.f1_y - nuevo.f2_y)**2)
+                # Penalizamos si están a menos de 100px
+                repulsion = 100 - dist_entre_fantasmas if dist_entre_fantasmas < 100 else 0
                 
-                nuevo_hijo.g = actual.g + 1
-                nuevo_hijo.h = dist1 + dist2 + penalizacion
-                nuevo_hijo.f = nuevo_hijo.g + nuevo_hijo.h
+                # --- FÓRMULA FINAL ---
+                # g = pasos dados, h = (Alpha * Distancia) + (Beta * Penalización por estar juntos)
+                nuevo.g = actual.g + 1
+                nuevo.h = (ALPHA * atraccion_pacman) + (BETA * repulsion)
+                nuevo.f = nuevo.g + nuevo.h
                 
-                # add child to open
-                open_list.append(nuevo_hijo)
-    
-    # Retornar las mejores direcciones 
+                open_list.append(nuevo)
+
+    # 3. Retornar las direcciones del mejor nodo encontrado
     if open_list:
         open_list.sort(key=lambda n: n.f)
         return open_list[0].dirs
+    
     return g1.dir, g2.dir
 
+#MUERE :(
+def verificar_colision():
+    global game_over
+    distancia_minima = 12 
+    for g in ghosts:
+        dist = math.sqrt((g.x - pc.x)**2 + (g.y - pc.y)**2)
+        if dist < distancia_minima:
+            if not game_over: # Para que el sonido solo suene una vez
+                print("¡GAME OVER! Presiona ESPACIO para salir.")
+                reproducir_muerte()
+                game_over = True
+
+def reproducir_muerte():
+    # Carga y reproduce el sonido de muerte original
+    # Asegúrate de tener el archivo 'death.wav' en tu carpeta
+    pygame.mixer.init()
+    try:
+        sonido_muerte = pygame.mixer.Sound("death.wav")
+        sonido_muerte.play()
+    except:
+        print("No se encontró el archivo de sonido")
+
+def draw_game_over_box():
+    glEnable(GL_TEXTURE_2D)
+    glBindTexture(GL_TEXTURE_2D, textures[6]) # Usamos la nueva textura
+    glColor3f(1.0, 1.0, 1.0) # Asegurar color original de la imagen
+    
+    # Definimos un cuadro pequeño centrado (ej. 200x100px)
+    glBegin(GL_QUADS)
+    glTexCoord2f(0.0, 0.0); glVertex2f(100, 150)
+    glTexCoord2f(0.0, 1.0); glVertex2f(100, 250)
+    glTexCoord2f(1.0, 1.0); glVertex2f(300, 250)
+    glTexCoord2f(1.0, 0.0); glVertex2f(300, 150)
+    glEnd()
+    glDisable(GL_TEXTURE_2D)
+    
 dir = 0
 olddir = 0
 
@@ -264,53 +301,64 @@ def display():
     Axis()
     PlanoTexturizado()
     band = 10
-    global dir, olddir
+    global dir, olddir, game_over
     
-    
-    keys = pygame.key.get_pressed()
-    
-    if keys[pygame.K_RIGHT]:
-        dir = 1  
-    if keys[pygame.K_DOWN]:
-        dir = 2
-    if keys[pygame.K_LEFT]:
-        dir = 3
-    if keys[pygame.K_UP]:
-        dir = 4
-  
-    
-    olddir = pc.update(olddir,dir)
-    pc.draw()
-     
-    pacman_pos = [pc.x, pc.y]
-    d1, d2 = a_star(ghosts[0], ghosts[1], pacman_pos)
-    
-    ghosts[0].dir = d1
-    ghosts[1].dir = d2
-    
-    for g in (ghosts):
-        g.draw()
+    if not game_over:
+        verificar_colision()
         
-        if g == ghosts[0] or g == ghosts[1]: #el azul y naranja son cooperativos
-            # Estos son los cooperativos, ya tienen su 'dir' asignada por el A*
-            # Solo necesitan seguir adelante
-            g.sigue_adelante()
+        keys = pygame.key.get_pressed()
+        
+        if keys[pygame.K_RIGHT]:
+            dir = 1  
+        if keys[pygame.K_DOWN]:
+            dir = 2
+        if keys[pygame.K_LEFT]:
+            dir = 3
+        if keys[pygame.K_UP]:
+            dir = 4
+    
+        
+        olddir = pc.update(olddir,dir)
+        pc.draw()
+     
+        pacman_pos = [pc.x, pc.y]
+        # Solo recalcular el camino A* cuando los fantasmas lleguen a una intersección real
+        if (ghosts[0].XPxToMC[ghosts[0].x] != -1 and ghosts[0].YPxToMC[ghosts[0].y] != -1) or (ghosts[1].XPxToMC[ghosts[1].x] != -1 and ghosts[1].YPxToMC[ghosts[1].y] != -1):
+    
+            d1, d2 = a_star(ghosts[0], ghosts[1], pacman_pos)
+            ghosts[0].dir = d1
+            ghosts[1].dir = d2
+
+        
+        for g in (ghosts):
+            g.draw()
             
-        elif g == ghosts[3]:
-            # El fantasma 4, el rojo, sigue con su lógica inteligente individual
-            g.update1(pacman_pos) 
-          
-        else:
-            # El resto sigue con lógica aleatoria 3rosa random
-            g.update2(pacman_pos)
+            if g == ghosts[0] or g == ghosts[1]: #el azul y naranja son cooperativos
+                # Estos son los cooperativos, ya tienen su 'dir' asignada por el A*
+                # Solo necesitan seguir adelante
+                g.sigue_adelante()
+                
+            elif g == ghosts[3]:
+                # El fantasma 4, el rojo, sigue con su lógica inteligente individual
+                g.update1(pacman_pos) 
+            
+            else:
+                # El resto sigue con lógica aleatoria 3rosa random
+                g.update2(pacman_pos)
+            
+    if game_over:
+        draw_game_over_box()
     
 done = False
+game_over = False
 Init()
 
 while not done:
     for event in pygame.event.get():
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
+                done = True
+            if game_over and event.key == pygame.K_SPACE:
                 done = True
     
    
