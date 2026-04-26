@@ -38,15 +38,7 @@ class Pacman:
         self.texturas = texturas
         self.Id = id
         
-    def update(self,olddir, dir):
-        #print(self.YPxToMC[self.y])
-        #print(dir)
-        #print(olddir)
-        print(f"pacman en: {self.x}, {self.y} - Pared: {self.mapa[int(self.y)][int(self.x)]}")
-        #print(dir == 1 and self.x + 1 <= self.MAX_X and self.mapa[self.y][self.x + 1] == 1)
-        #print(self.XPxToMC[self.x]  != -1 and self.YPxToMC[self.y] != -1 )
-        print(self.XPxToMC[self.x], self.YPxToMC[self.y] )
-        
+    def update(self,olddir, dir):      
         
         if self.XPxToMC[self.x]  != -1 and self.YPxToMC[self.y] != -1 :
         #if self.XPxToMC[self.x] != -1 and self.YPxToMC[self.y] != -1:

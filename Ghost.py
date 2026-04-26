@@ -16,6 +16,7 @@ import heapq
 
 class Ghost:
     def __init__(self,mapa, mc, x_mc, y_mc, xini, yini, dir, tipo):
+        self.en_interseccion = False
         #Matriz de control que almacena los IDs de las intersecciones
         self.MC = mc
         #Vectores que almacenan las coordenadas 
@@ -56,15 +57,6 @@ class Ghost:
             self.y -= 1
         else:
             # Hay pared, elegir dirección aleatoria válida
-            """
-            opciones = []
-            if self.x + 1 <= self.MAX_X and self.mapa[self.y][self.x + 1] == 1: opciones.append(1)
-            if self.x - 1 >= 0          and self.mapa[self.y][self.x - 1] == 1: opciones.append(3)
-            if self.y + 1 <= self.MAX_Y and self.mapa[self.y + 1][self.x] == 1: opciones.append(2)
-            if self.y - 1 >= 0          and self.mapa[self.y - 1][self.x] == 1: opciones.append(4)
-            if opciones:
-                self.dir = random.choice(opciones)
-            """
             self.interseccion_solo_random()
             self.sigue_adelante()
  
@@ -90,14 +82,7 @@ class Ghost:
  
         # Si ninguna preferida funciona, dirección aleatoria
         self.interseccion_solo_random()
-        """
-        opciones = []
-        if self.x + 1 <= self.MAX_X and self.mapa[self.y][self.x + 1] == 1: opciones.append(1)
-        if self.x - 1 >= 0          and self.mapa[self.y][self.x - 1] == 1: opciones.append(3)
-        if self.y + 1 <= self.MAX_Y and self.mapa[self.y + 1][self.x] == 1: opciones.append(2)
-        if self.y - 1 >= 0          and self.mapa[self.y - 1][self.x] == 1: opciones.append(4)
-        if opciones:
-            self.dir = random.choice(opciones)"""
+
             
     def interseccion_solo_random(self):
         
