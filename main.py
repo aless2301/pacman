@@ -1,3 +1,12 @@
+'''
+25/04/26
+Alessandra Caballero
+J. Mariano Cariño
+Esperanza Román
+María Guadalupe Colomar Cedeño
+
+'''
+
 import pygame
 from pygame.locals import *
 
@@ -210,26 +219,49 @@ def PlanoTexturizado():
 #MI BELLO A STAR
 def a_star(g1, g2, pacmanXY):
    
-    ALPHA = 0.6  # Importancia de acercarse al Pacman
-    BETA = 0.4 # Importancia de separarse entre ellos
+    ALPHA = 0.7  # Importancia de acercarse al Pacman
+    BETA = 0.3 # Importancia de separarse entre ellos
     
     #nodo inicial
     nodo_raiz = Node((g1.x, g1.y), (g2.x, g2.y), (g1.dir, g2.dir))
     open_list = [nodo_raiz]
-    
+    opposite = {1:3, 3:1, 2:4, 4:2}
 
-    # profundidad 3 
-    for _ in range(3):
+    # profundidad 2 
+    for _ in range(2):
         if not open_list: break
         
         open_list.sort(key=lambda n: n.f) # El más prometedor primero
         actual = open_list.pop(0)
         
         # Generar combinaciones de movimientos para ambos fantasmas
-        for h1 in g1.children():
-            for h2 in g2.children():
-                nuevo = Node(h1['pos'], h2['pos'], (h1['dir'], h2['dir']), parent=actual)
-                
+        movimientos_h1 = [ h for h in g1.children() 
+                    if h['dir'] != opposite[g1.dir]
+                ]
+
+                # Si no hay opciones, permitir reversa
+        if not movimientos_h1:
+                movimientos_h1 = g1.children()
+
+                # Filtrar movimientos válidos para g2
+        movimientos_h2 = [
+                h for h in g2.children()
+                if h['dir'] != opposite[g2.dir]
+            ]
+
+                # Si no hay opciones, permitir reversa
+        if not movimientos_h2:
+                movimientos_h2 = g2.children()
+
+                # Loop
+        for h1 in movimientos_h1:
+                for h2 in movimientos_h2:
+                    nuevo = Node(
+                        h1['pos'],
+                        h2['pos'],
+                        (h1['dir'], h2['dir']),
+                        parent=actual
+                        )
                 # --- EVALUACIÓN EUCLIDIANA ---
                 # Distancia de los fantasmas al Pacman
                 dist_p1 = math.sqrt((nuevo.f1_x - pacmanXY[0])**2 + (nuevo.f1_y - pacmanXY[1])**2)
@@ -239,7 +271,7 @@ def a_star(g1, g2, pacmanXY):
                 # Distancia entre fantasmas (Queremos que sea GRANDE, por eso restamos)
                 dist_entre_fantasmas = math.sqrt((nuevo.f1_x - nuevo.f2_x)**2 + (nuevo.f1_y - nuevo.f2_y)**2)
                 # Penalizamos si están a menos de 300px
-                repulsion = 300 - dist_entre_fantasmas if dist_entre_fantasmas < 300 else 0
+                repulsion = 100 - dist_entre_fantasmas if dist_entre_fantasmas < 100 else 0
                 
                 # --- FÓRMULA FINAL ---
                 # g = pasos dados, h = (Alpha * Distancia) + (Beta * Penalización por estar juntos)
@@ -339,7 +371,7 @@ def display():
         g1 = ghosts[1]
         # Solo recalcular el camino A* cuando ambos fantasmas lleguen a una intersección real
         en_interseccion = (
-            g0.XPxToMC[g0.x] != -1 and g0.YPxToMC[g0.y] != -1 or
+            g0.XPxToMC[g0.x] != -1 and g0.YPxToMC[g0.y] != -1 and
             g1.XPxToMC[g1.x] != -1 and g1.YPxToMC[g1.y] != -1
         )
         if en_interseccion and not g0.en_interseccion:
